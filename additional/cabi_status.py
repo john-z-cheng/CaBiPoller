@@ -3,6 +3,7 @@ import json
 import sqlite3
 import sys
 import os
+import platform
 from datetime import datetime
 
 def get_stations():
@@ -131,12 +132,17 @@ def process_db_station(conn, st_dict):
     
 def process_stations(stations_ary, poll_time):
     # check if on Windows or Linux
-    sqlite_file = os.path.join(os.sep, 'Users','John','Documents',
-                               'Share_VirtualBox', 'db.sqlite3')
-    sqlite_file = os.path.join(os.sep, 'media', 'sf_Share_VirtualBox',
-                               'db.sqlite3')
-    print(sqlite_file)
-    sys.exit()
+    windows_path = [os.sep, 'Users', 'John', 'Documents', 
+    'Share_VirtualBox',]
+    linux_path = [os.sep, 'media', 'sf_Share_VirtualBox',]
+
+    if platform.system() == 'Linux':
+        db_path = linux_path.copy()
+    else:
+        db_path = windows_path.copy()
+    db_path.append('db.sqlite3')
+    sqlite_file = os.path.join(*db_path)
+
     # Connecting to the database file
     conn = sqlite3.connect(sqlite_file)
     conn.row_factory = sqlite3.Row

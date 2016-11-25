@@ -2,13 +2,24 @@ import sqlite3
 import os
 import http.client
 import json
+import platform
 from datetime import datetime
 
+windows_path = [os.sep, 'Users','John','Documents','Share_VirtualBox',]
+linux_path = [os.sep, 'media','sf_Share_VirtualBox',]
 
-src_sqlite_file = os.path.join(os.sep, 'Users','John','Documents',
-                               'Share_VirtualBox', 'db.sqlite3')
-dst_sqlite_file = os.path.join(os.sep, 'Users','John','Documents',
-                               'Share_VirtualBox', 'cabi_ref.sqlite3')
+if (platform.system() == 'Linux'):
+    src_path = linux_path.copy()
+    dst_path = linux_path.copy()
+else:
+    src_path = windows_path.copy()
+    dst_path = windows_path.copy()
+
+src_path.append('db.sqlite3')
+dst_path.append('cabi_ref.sqlite3')
+src_sqlite_file = os.path.join(*src_path)
+dst_sqlite_file = os.path.join(*dst_path)
+                               
 
 def create_dst_table():
     # Connecting to the database file
