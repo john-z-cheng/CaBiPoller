@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Last polled at: {{ polltime }}</h3>
+<h3>Broken Dock Stations</h3>
+	<ul>
+	{% for station in stations.broken %}
+	<li>
+		<a href="{% url 'station_detail' station.id %}">
+			{{ station.name|capfirst }}
+		</a>
+	</li>
+	{% endfor %}
+	</ul>
+<h3>No Bike Available Stations</h3>
+	<ul>
+	{% for station in stations.nobikes %}
+	<li>
+		<a href="{% url 'station_detail' station.id %}">
+			{{ station.name|capfirst }}
+		</a>
+	</li>
+	{% endfor %}
+	</ul>
+<h3>No Dock Available Stations</h3>
+	<ul>
+	{% for station in stations.nodocks %}
+	<li>
+		<a href="{% url 'station_detail' station.id %}">
+			{{ station.name|capfirst }}
+		</a>
+	</li>
+	{% endfor %}
+	</ul>
+{% endblock %} 

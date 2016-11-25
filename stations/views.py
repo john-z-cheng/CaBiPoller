@@ -1,0 +1,24 @@
+from django.shortcuts import render
+from django.http import Http404
+
+from django.db.models import F
+from stations.models import Station
+
+def index(request):
+	stations = {}
+	stations['broken'] = Station.objects.filter(curr_total__lt=F('max_total'))
+	stations['nobikes'] = Station.objects.filter(bikes=0)
+	stations['nodocks'] = Station.objects.filter(docks=0)
+	polltime = Station.objects.get(id=31000).poll_time
+	return render(request, 'status/index.html', {
+		'stations':stations,'polltime':polltime
+	})
+	
+def station_detail(request, id):
+	try:
+		station = Station.objects.get(id=id)
+	except Station.DoesNotExist:
+		raise Http404('This station does not exist')
+	return render(request, 'status/station_detail.html', {
+		'station': station
+	})

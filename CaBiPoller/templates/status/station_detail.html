@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<a href="{% url 'index' %}">Back to station list</a>
+	<h3>{{ station.name|capfirst }}</h3>
+	<p> {{ station.bikes }} bikes available</p>
+	<p> {{ station.docks }} docks available</p>
+	<h4>Maximum Total docks (with or without bikes) :</h4>
+	<p>{{ station.max_total }}</p>
+{% endblock %}
