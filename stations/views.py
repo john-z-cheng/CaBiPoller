@@ -8,7 +8,11 @@ from additional import cabi_status
 
 def index(request):
 	stations = {}
-	stations['broken'] = Station.objects.filter(curr_total__lt=F('max_total'))
+	brokenList = Station.objects.filter(curr_total__lt=F('max_total'))
+	# add attribute for difference
+	for broken in brokenList:
+		broken.difference = broken.max_total - broken.curr_total
+	stations['broken'] = brokenList
 	stations['nobikes'] = Station.objects.filter(bikes=0)
 	stations['nodocks'] = Station.objects.filter(docks=0)
 	timestamp = Station.objects.get(id=31000).poll_time

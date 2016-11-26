@@ -3,15 +3,20 @@
 {% block content %}
 <h3>Last polled at: {{ polltime }}</h3>
 <h3>Broken Dock Stations</h3>
-	<ul>
+	<table>
+	<th>Name</th>
+	<th>Total Docks</th>
+	<th>Broken</th>
 	{% for station in stations.broken %}
-	<li>
+	<tr><td>
 		<a href="{% url 'station_detail' station.id %}">
 			{{ station.name|capfirst }}
-		</a>
-	</li>
+		</a></td>
+		<td>{{ station.max_total }}</td>
+		<td>{{ station.difference }}</td>
+	</tr>
 	{% endfor %}
-	</ul>
+	</table>
 <h3>No Bike Available Stations</h3>
 	<ul>
 	{% for station in stations.nobikes %}
