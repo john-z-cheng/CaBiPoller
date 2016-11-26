@@ -1,8 +1,9 @@
 from django.shortcuts import render
-from django.http import Http404
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 
 from django.db.models import F
 from stations.models import Station
+from additional import cabi_status
 
 def index(request):
 	stations = {}
@@ -22,3 +23,9 @@ def station_detail(request, id):
 	return render(request, 'status/station_detail.html', {
 		'station': station
 	})
+	
+def poll(request):
+	answer = request.POST['word']
+	# execute the cabi_status.py in the additional directory
+	cabi_status.run()
+	return HttpResponseRedirect('/')

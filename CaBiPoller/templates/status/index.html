@@ -32,4 +32,11 @@
 	</li>
 	{% endfor %}
 	</ul>
+<div>
+<form action={% url 'poll' %}" method="post">
+{% csrf_token %}
+{{ question }}<br>
+<input type="text" name="word" />
+<input type="submit" value="poll" />
+</div>
 {% endblock %} 

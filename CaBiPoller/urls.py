@@ -21,5 +21,6 @@ from stations import views
 urlpatterns = [
 	url(r'^$', views.index, name='index'),
 	url(r'station/(?P<id>\d+)/', views.station_detail, name='station_detail'),
+	url(r'status/poll', views.poll, name='poll'),
     url(r'^admin/', admin.site.urls),
 ]

@@ -188,7 +188,11 @@ def process_stations(stations_ary, poll_time):
             print("%d from max at %s %s" % (max_diff, station_id, station_name))
     conn.commit()
     conn.close()
-    
-if __name__ == "__main__":
+	
+def run():
     station_ary, poll_time = get_stations()
     process_stations(station_ary, poll_time)
+    
+if __name__ == "__main__":
+	run()
+    
