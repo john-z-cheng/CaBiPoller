@@ -15,11 +15,11 @@ def get_stations():
     response_obj = json.loads(data)
     station_ary = response_obj['stations']
     print(len(station_ary))
-    timestamp = int(response_obj['timestamp'])/1000
+    timestamp = int(response_obj['timestamp']/1000)
     poll_dt = datetime.fromtimestamp(timestamp)
     poll_time = poll_dt.strftime('%Y-%m-%d %H:%M:%S')
     print(poll_time)
-    return station_ary, poll_time
+    return station_ary, timestamp
 
 def print_station(station):
     print(station)
@@ -78,22 +78,18 @@ def select_last_count(conn, station_id):
     else:
         return (0, 0)
 
-def create_station_dict(station, poll_time):
+def create_station_dict(station, timestamp):
     """Extract/transform attributes from original dict loaded from json
     and add the poll_time"""
     st_dict = {}
     st_dict['id'] = station['n']
     st_dict['name'] = station['s']
-    lc_int = int(station['lc'])/1000
-    lu_int = int(station['lu'])/1000
-    lc_dt = datetime.fromtimestamp(lc_int)
-    lu_dt = datetime.fromtimestamp(lu_int)
-    st_dict['lc'] = lc_dt.strftime('%Y-%m-%d %H:%M:%S')
-    st_dict['lu'] = lu_dt.strftime('%Y-%m-%d %H:%M:%S')
+    st_dict['lc'] = int(station['lc']/1000)
+    st_dict['lu'] = int(station['lu']/1000)
     st_dict['bikes'] = int(station['ba'])
     st_dict['docks'] = int(station['da'])
     st_dict['total'] = st_dict['docks'] + st_dict['bikes']
-    st_dict['poll_time'] = poll_time
+    st_dict['poll_time'] = timestamp
     return st_dict
 
 def create_count_params(st_dict):

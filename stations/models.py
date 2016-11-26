@@ -9,29 +9,43 @@ from __future__ import unicode_literals
 
 from django.db import models
 
+class RefStation(models.Model):
+    id = models.IntegerField(primary_key=True, blank=True, null=False)
+    name = models.TextField(blank=True, null=True)
+    max_total = models.IntegerField(blank=True, null=True)
+    jurisdiction = models.TextField(blank=True, null=True)
+    elevation = models.FloatField(blank=True, null=True)
+    lat = models.FloatField(blank=True, null=True)
+    lon = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'ref_stations'
 
 class Count(models.Model):
     station_id = models.IntegerField(blank=True, null=True)
     bikes = models.IntegerField(blank=True, null=True)
     docks = models.IntegerField(blank=True, null=True)
-    poll_time = models.TextField(blank=True, null=True)
+    poll_time = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'counts'
 
 
 class Station(models.Model):
     id = models.IntegerField(primary_key=True, blank=True, null=False)
     name = models.TextField(blank=True, null=True)
-    poll_time = models.TextField(blank=True, null=True)
+    poll_time = models.IntegerField(blank=True, null=True)
     curr_total = models.IntegerField(blank=True, null=True)
     max_total = models.IntegerField(blank=True, null=True)
     bikes = models.IntegerField(blank=True, null=True)
     docks = models.IntegerField(blank=True, null=True)
-    lc = models.TextField(blank=True, null=True)
-    lu = models.TextField(blank=True, null=True)
+    lc = models.IntegerField(blank=True, null=True)
+    lu = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'stations'
+
+
