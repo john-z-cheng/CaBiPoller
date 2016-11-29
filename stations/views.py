@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 
 from django.db.models import F
+import pytz
 
 from collections import defaultdict
 from stations.models import Station
@@ -44,8 +45,12 @@ def index(request):
 	stations['nodocks'] = Station.objects.filter(docks=0)
 	timestamp = Station.objects.get(id=31000).poll_time
 	# convert timestamp to human-readable string
-	poll_dt = datetime.fromtimestamp(timestamp)
-	polltime = poll_dt.strftime('%Y-%m-%d %H:%M:%S')
+	poll_dt = datetime.utcfromtimestamp(timestamp)
+	utc_tz = pytz.timezone('UTC')
+	est_tz = pytz.timezone('US/Eastern')
+	est_dt = utc_tz.localize(poll_dt).astimezone(est_tz)
+	est_dt = est_tz.normalize(est_dt)
+	polltime = est_dt.strftime('%Y-%m-%d %H:%M:%S')
 	question = 'Answer the question'
 	return render(request, 'status/index.html', {
 		'stations':stations,'polltime':polltime,'question':question,
