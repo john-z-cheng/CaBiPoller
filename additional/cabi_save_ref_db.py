@@ -4,6 +4,7 @@ import http.client
 import json
 import platform
 from datetime import datetime
+import pytz
 
 windows_path = [os.sep, 'Users','John','Documents','Share_VirtualBox',]
 linux_path = [os.sep, 'media','sf_Share_VirtualBox',]
@@ -46,8 +47,13 @@ def get_stations():
     station_ary = response_obj['stations']
     print(len(station_ary))
     timestamp = int(response_obj['timestamp'])/1000
-    poll_dt = datetime.fromtimestamp(timestamp)
-    poll_time = poll_dt.strftime('%Y-%m-%d %H:%M:%S')
+    print(timestamp)
+    poll_dt = datetime.utcfromtimestamp(timestamp)
+    utc_tz = pytz.timezone('UTC')
+    est_tz = pytz.timezone('US/Eastern')
+    est_dt = utc_tz.localize(poll_dt).astimezone(est_tz)
+    est_dt = est_tz.normalize(est_dt)
+    poll_time = est_dt.strftime('%Y-%m-%d %H:%M:%S')
     print(poll_time)
     return station_ary
 
