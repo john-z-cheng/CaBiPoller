@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from django.views.generic import TemplateView
 
 from stations import views
 
@@ -22,5 +23,6 @@ urlpatterns = [
 	url(r'^$', views.index, name='index'),
 	url(r'station/(?P<id>\d+)/', views.station_detail, name='station_detail'),
 	url(r'status/poll', views.poll, name='poll'),
+	url(r'status/about', TemplateView.as_view(template_name='status/about.html'), name='about'),
     url(r'^admin/', admin.site.urls),
 ]

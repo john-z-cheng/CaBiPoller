@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+	<a href="{% url 'index' %}">Back to station list</a>
+	<h3>This is a pre-production deployment.</h3>
+	<p>The status of bike stations may only be a snapshot in time, 
+	if the background cron job is not running.</p>
+	<a href="https://github.com/john-z-cheng/CaBiPoller">Source code on github</a>
+{% endblock %}
