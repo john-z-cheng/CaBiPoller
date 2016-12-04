@@ -78,6 +78,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(os.sep, 'Users','John','Documents','Share_VirtualBox', 'db.sqlite3'),
+        #'NAME': os.path.join(os.sep, 'Users','John','Documents','Share_VirtualBox', 'cabi.sqlite'),
+
     }
 }
 

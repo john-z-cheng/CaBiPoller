@@ -20,7 +20,7 @@ def create_jurisdiction_data():
 def get_list_per_jurisdiction(stationToJurisdiction, stationList):
 	stationsByJurisdiction = defaultdict(list)
 	for station in stationList:
-		jurisdiction = stationToJurisdiction[station.id]
+		jurisdiction = stationToJurisdiction[station.ref_station.id]
 		stationsByJurisdiction[jurisdiction].append(station)
 	# convert to list of tuples (jurisdiction, list) ordered by name
 	names =  sorted(stationsByJurisdiction.keys())
@@ -33,17 +33,13 @@ def get_list_per_jurisdiction(stationToJurisdiction, stationList):
 def index(request):
 	stations = {}
 	stationToJurisdiction = create_jurisdiction_data()
-	brokenList = Station.objects.filter(curr_total__lt=F('max_total'))
-	# add attribute for difference
-	for broken in brokenList:
-		broken.difference = broken.max_total - broken.curr_total
-		broken.place = 'Blue '
+	brokenList = Station.objects.filter(defective_state='unacceptable')
 	jurisList = get_list_per_jurisdiction(stationToJurisdiction, brokenList)
 
 	stations['broken'] = jurisList
-	stations['nobikes'] = Station.objects.filter(bikes=0)
-	stations['nodocks'] = Station.objects.filter(docks=0)
-	timestamp = Station.objects.get(id=31000).poll_time
+	stations['nobikes'] = Station.objects.filter(available_state='empty')
+	stations['nodocks'] = Station.objects.filter(available_state='full')
+	timestamp = Station.objects.get(ref_station=31000).poll_time
 	# convert timestamp to human-readable string
 	poll_dt = datetime.utcfromtimestamp(timestamp)
 	utc_tz = pytz.timezone('UTC')
@@ -58,7 +54,7 @@ def index(request):
 	
 def station_detail(request, id):
 	try:
-		station = Station.objects.get(id=id)
+		station = Station.objects.get(ref_station=id)
 		refStation = RefStation.objects.get(id=id)
 		station.jurisdiction = refStation.jurisdiction
 	except (Station.DoesNotExist, RefStation.DoesNotExist):

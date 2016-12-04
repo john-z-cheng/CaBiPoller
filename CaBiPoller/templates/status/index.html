@@ -13,11 +13,11 @@
 	<tr><td>{{ jurisdiction }}</td></tr>
 		{% for station in stations %}
 		<tr><td>
-			<a href="{% url 'station_detail' station.id %}">
-				{{ station.name|capfirst }}
+			<a href="{% url 'station_detail' station.ref_station.id %}">
+				{{ station.ref_station.name|capfirst }}
 			</a></td>
-			<td>{{ station.max_total }}</td>
-			<td>{{ station.difference }}</td>
+			<td>{{ station.ref_station.dock_qty }}</td>
+			<td>{{ station.inactives }}</td>
 		</tr>
 		{% endfor %}
 	</tbody>
@@ -27,8 +27,8 @@
 	<ul>
 	{% for station in stations.nobikes %}
 	<li>
-		<a href="{% url 'station_detail' station.id %}">
-			{{ station.name|capfirst }}
+		<a href="{% url 'station_detail' station.ref_station.id %}">
+			{{ station.ref_station.name|capfirst }}
 		</a>
 	</li>
 	{% endfor %}
@@ -37,8 +37,8 @@
 	<ul>
 	{% for station in stations.nodocks %}
 	<li>
-		<a href="{% url 'station_detail' station.id %}">
-			{{ station.name|capfirst }}
+		<a href="{% url 'station_detail' station.ref_station.id %}">
+			{{ station.ref_station.name|capfirst }}
 		</a>
 	</li>
 	{% endfor %}

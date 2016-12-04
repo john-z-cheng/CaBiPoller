@@ -31,58 +31,37 @@ def print_station(station):
     print(station)
 
 def create_station_insert_params(st_dict):
-    return (st_dict['id'], st_dict['name'], st_dict['poll_time'],
-            st_dict['total'], st_dict['max_total'],
-            st_dict['bikes'], st_dict['docks'],
-            st_dict['lc'], st_dict['lu'])
+    return (st_dict['id'], st_dict['bikes'], st_dict['docks'], st_dict['inactives'],
+			st_dict['poll_time'], st_dict['lu'], st_dict['lc'])
 
-def insert_station(conn, values):
-    insert_stmt = """INSERT INTO stations
-    (id, name, poll_time, curr_total, max_total, bikes, docks, lc, lu)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+def insert_curr_station(conn, station_id):
+    """Creates the row in the curr_stations table with all columns as
+    NULL except for the primary id"""
+    insert_stmt = """INSERT INTO curr_stations (station_id) VALUES (?)"""
     cursor = conn.cursor()
-    cursor.execute(insert_stmt, values)
+    cursor.execute(insert_stmt, (station_id,))
 
 def create_station_update_params(st_dict):
-    return (st_dict['bikes'], st_dict['docks'],
-            st_dict['total'], st_dict['max_total'],
+    return (st_dict['bikes'], st_dict['docks'], st_dict['inactives'],
+            st_dict['a_state'], st_dict['d_state'],
             st_dict['poll_time'], st_dict['lc'], st_dict['lu'], 
             st_dict['id'])
 
-def update_station(conn, values):
-    update_stmt = """UPDATE stations
-    SET bikes=?, docks=?, curr_total=?, max_total=?, poll_time=?,
-    lc=?, lu=?
-    WHERE id=?"""
+def update_curr_station(conn, st_dict):
+    values = create_station_update_params(st_dict)
+    update_stmt = """UPDATE curr_stations
+    SET bikes=?, docks=?, inactives=?, available_state=?, defective_state=?,
+	poll_time=?, lu=?, lc=?
+    WHERE station_id=?"""
     cursor = conn.cursor()
     cursor.execute(update_stmt, values)
 
-def select_station(conn, station_id):
-    select_stmt = """SELECT name, bikes, docks, curr_total, max_total
-    FROM stations WHERE id=?"""
+def select_curr_station(conn, station_id):
+    select_stmt = """SELECT * FROM curr_stations WHERE station_id=?"""
     cursor = conn.cursor()
     cursor.execute(select_stmt, (station_id,))
     db_station = cursor.fetchone()
     return db_station
-
-def insert_count(conn, values):
-    insert_stmt = """INSERT INTO counts
-    (station_id, bikes, docks, poll_time) VALUES (?, ?, ?, ?)"""
-    cursor = conn.cursor()
-    cursor.execute(insert_stmt, values)
-
-def select_last_count(conn, station_id):
-    select_stmt = """SELECT bikes, docks FROM counts WHERE station_id=?
-    ORDER BY poll_time DESC LIMIT 1"""
-    cursor = conn.cursor()
-    cursor.execute(select_stmt, (station_id,))
-    count_row = cursor.fetchone()
-    if count_row != None:
-        bikes = count_row['bikes']
-        docks = count_row['docks']
-        return (bikes, docks)
-    else:
-        return (0, 0)
 
 def create_station_dict(station, timestamp):
     """Extract/transform attributes from original dict loaded from json
@@ -94,48 +73,128 @@ def create_station_dict(station, timestamp):
     st_dict['lu'] = int(station['lu']/1000)
     st_dict['bikes'] = int(station['ba'])
     st_dict['docks'] = int(station['da'])
-    st_dict['total'] = st_dict['docks'] + st_dict['bikes']
     st_dict['poll_time'] = timestamp
     return st_dict
 
-def create_count_params(st_dict):
-    return (st_dict['id'], st_dict['bikes'], st_dict['docks'],
-            st_dict['poll_time'])
 
-                                                             
-def process_db_station(conn, st_dict):
-    """Updates the stations table with the current station while
+def get_dock_qty(conn, station_id):
+    select_stmt = """SELECT dock_qty FROM ref_stations WHERE id=?"""
+    cursor = conn.cursor()
+    cursor.execute(select_stmt, (station_id,))
+    row = cursor.fetchone()
+    if row != None:
+        return row[0]
+    else:
+        return 0
+                                                         
+def get_db_station(conn, st_dict):
+    """Updates the curr_stations table with the current values while
     making sure the maximum total of docks and bikes is preserved
     and then returning the max total"""
     # save db_station if not previously saved
-    db_station = select_station(conn, st_dict['id'])
-    if db_station == None:
-        st_dict['max_total'] = 0
-        value_params = create_station_insert_params(st_dict)
-        insert_station(conn, value_params)
-        db_station = select_station(conn, st_dict['id'])
-    if db_station == None:
+    db_dict = select_curr_station(conn, st_dict['id'])
+    if db_dict == None:
+        insert_curr_station(conn, st_dict['id'])
+        db_dict = select_curr_station(conn, st_dict['id'])
+    if db_dict == None:
         raise AssertionError("db_station is missing")
+    db_station = dict()
+    for key in db_dict.keys():
+        db_station[key] = db_dict[key]
+    # get the dock_qty and include in the db_station
+    db_station['dock_qty'] = get_dock_qty(conn, st_dict['id'])
+    db_station['a_state'] = db_station['available_state']
+    db_station['d_state'] = db_station['defective_state']
+    return db_station
 
-    # update db_station if its total has increased (to new maximum)
-    total = st_dict['total']
-    db_total = db_station['max_total']
-    max_total = total if total > db_total else db_total
-    if db_total != max_total:
-        total_diff = max_total - db_total
-        print("Max total has changed by %d at %s %s" %
-              (total_diff, st_dict['id'], st_dict['name']))
-    # update station in the database
-    st_dict['max_total'] = max_total
-    value_params = create_station_update_params(st_dict)
-    update_station(conn, value_params)
-    return max_total
+def create_count_params(state_type, st_dict):
+    return (st_dict['id'], state_type,
+            st_dict['bikes'], st_dict['docks'], st_dict['inactives'],
+            st_dict['poll_time'], st_dict['lu'])
 
+def insert_count_history(conn, state_type, st_dict):
+    values = create_count_params(state_type, st_dict)
+    insert_stmt = """INSERT INTO count_history
+    (station_id, state_type, bikes, docks, inactives, poll_time, lu)
+    VALUES (?, ?, ?, ?, ?, ?, ?)"""
+    cursor = conn.cursor()
+    cursor.execute(insert_stmt, values)
     
-def process_stations(stations_ary, poll_time):
+def update_count_history(conn, st_dict, db_dict):
+    # calculate the new value for inactives for st_dict
+    total = st_dict['bikes'] + st_dict['docks']
+    st_dict['inactives'] = db_dict['dock_qty'] - total
+
+    was_inserted = False
+    # insert into count_history if any change
+    if ((db_dict['bikes'] != st_dict['bikes']) or
+        (db_dict['docks'] != st_dict['docks'])):
+        insert_count_history(conn, 'available', st_dict)
+        was_inserted = True
+
+    if (db_dict['inactives'] != st_dict['inactives']):
+        insert_count_history(conn, 'defective', st_dict)
+        was_inserted = True
+
+    return was_inserted
+
+def create_state_params(state_type, st_dict, db_dict):
+    if state_type == 'available':
+        new_state = st_dict['a_state']
+        old_state = db_dict['a_state']
+    elif state_type == 'defective':
+        new_state = st_dict['d_state']
+        old_state = db_dict['d_state']
+    return (st_dict['id'], st_dict['poll_time'],
+            state_type, old_state, new_state)
+
+def insert_state_history(conn, state_type, st_dict, db_dict):
+    values = create_state_params(state_type, st_dict, db_dict)
+    insert_stmt = """INSERT INTO state_history
+    (station_id, change_time, state_type, old_state, new_state)
+    VALUES (?, ?, ?, ?, ?)"""
+    cursor = conn.cursor()
+    cursor.execute(insert_stmt, values)
+    
+
+def update_state_history(conn, st_dict, db_dict):
+    # determine the current available_state
+    if (st_dict['bikes'] != 0 and st_dict['docks'] != 0):
+        st_dict['a_state'] = 'acceptable'
+    elif (st_dict['bikes'] == 0):
+        st_dict['a_state'] = 'empty'
+    elif (st_dict['docks'] == 0):
+        st_dict['a_state'] = 'full'
+    else:
+        # both bikes and docks are 0 which is very unusual
+        st_dict['a_state'] = 'unavailable'
+    
+    # determine the current defective_state
+    if st_dict['inactives'] == 0:
+        st_dict['d_state'] = 'acceptable'
+    elif st_dict['inactives'] > 0:
+        st_dict['d_state'] = 'unacceptable'
+    else:
+        # negative means dock_qty could be wrong in ref_stations
+        st_dict['d_state'] = 'unexpected'
+
+    needs_update = False
+    if (st_dict['a_state'] != db_dict['a_state']):
+        insert_state_history(conn, 'available', st_dict, db_dict)
+        needs_update = True
+    if (st_dict['d_state'] != db_dict['d_state']):
+        insert_state_history(conn, 'defective', st_dict, db_dict)
+        
+    if needs_update:
+        update_curr_station(conn, st_dict)
+        return True
+    else:
+        return False
+
+	
+def process_stations(stations_ary, timestamp):
     # check if on Windows or Linux
-    windows_path = [os.sep, 'Users', 'John', 'Documents', 
-    'Share_VirtualBox',]
+    windows_path = [os.sep, 'Users', 'John', 'Documents', 'Share_VirtualBox',]
     linux_path = [os.sep, 'media', 'sf_Share_VirtualBox',]
 
     if platform.system() == 'Linux':
@@ -151,11 +210,21 @@ def process_stations(stations_ary, poll_time):
         
     for station in stations_ary:
         # transform attributes of json station
-        st_dict = create_station_dict(station, poll_time)
+        st_dict = create_station_dict(station, timestamp)
 
-        # determine any change in counts between last saved count and now
-        # for now, this is limited to the total and not bikes/docks
-        curr_total = st_dict['total']        
+        # get the previous state
+        db_dict = get_db_station(conn, st_dict)
+
+        # detect and save any change in counts 
+        update_count_history(conn, st_dict, db_dict)
+
+	# detect and save any change in states
+        update_state_history(conn, st_dict, db_dict)		
+        
+    conn.commit()
+    conn.close()
+	
+def old_code():
         (db_bikes, db_docks) = select_last_count(conn, st_dict['id'])
         last_total = db_bikes + db_docks
         diff = curr_total - last_total
@@ -164,11 +233,6 @@ def process_stations(stations_ary, poll_time):
         if diff != 0:
             value_params = create_count_params(st_dict)
             insert_count(conn, value_params)
-        
-        max_total = process_db_station(conn, st_dict)
-
-        # detect non-availability of bikes or docks and save to lists 
-        # detect_non_availability(st_dict)
         
         # calculate delta for the total
         delta = curr_total - last_total
@@ -188,13 +252,11 @@ def process_stations(stations_ary, poll_time):
             pass
         if max_diff > 0:
             print("%d from max at %s %s" % (max_diff, station_id, station_name))
-    conn.commit()
-    conn.close()
-	
+			
 def run():
-    station_ary, poll_time = get_stations()
-    process_stations(station_ary, poll_time)
+    station_ary, timestamp = get_stations()
+    process_stations(station_ary, timestamp)
     
 if __name__ == "__main__":
-	run()
+    run()
     
