@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h3>Last polled at: {{ polltime }} Eastern Time</h3>
+<h3>Detected change at: {{ polltime }} Eastern Time</h3>
 <a href="{% url 'about' %}">About this site</a>
-<h3>Broken Dock Stations</h3>
+<h3>Defective Stations</h3>
 	<table class="table">
 	<th>Name</th>
 	<th>Total Docks</th>
-	<th>Inactive</th>
+	<th>Defective</th>
 	{% for jurisdiction, stations in stations.broken %}
 	<tbody class="{{ jurisdiction }}">
 	<tr><td>{{ jurisdiction }}</td></tr>

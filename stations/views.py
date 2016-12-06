@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 
-from django.db.models import F
+from django.db.models import Max
 import pytz
 
 from collections import defaultdict
@@ -39,7 +39,8 @@ def index(request):
 	stations['broken'] = jurisList
 	stations['nobikes'] = Station.objects.filter(available_state='empty')
 	stations['nodocks'] = Station.objects.filter(available_state='full')
-	timestamp = Station.objects.get(ref_station=31000).poll_time
+	value_dict = Station.objects.all().aggregate(Max('poll_time'))
+	timestamp = value_dict['poll_time__max']    
 	# convert timestamp to human-readable string
 	poll_dt = datetime.utcfromtimestamp(timestamp)
 	utc_tz = pytz.timezone('UTC')
