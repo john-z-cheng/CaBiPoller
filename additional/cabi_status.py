@@ -67,15 +67,16 @@ def create_station_dict(station, timestamp):
     """Extract/transform attributes from original dict loaded from json
     and add the poll_time"""
     st_dict = {}
-    st_dict['id'] = station['n']
-    st_dict['name'] = station['s']
-    st_dict['lc'] = int(station['lc']/1000)
-    st_dict['lu'] = int(station['lu']/1000)
-    st_dict['bikes'] = int(station['ba'])
-    st_dict['docks'] = int(station['da'])
+    if 'n' in station: st_dict['id'] = station['n']
+    if 's' in station: st_dict['name'] = station['s']
+    if 'lc' in station: st_dict['lc'] = int(station['lc']/1000)
+    else: st_dict['lc'] = 0
+    if 'lu' in station: st_dict['lu'] = int(station['lu']/1000)
+    else: st_dict['lu'] = 0
+    if 'ba' in station: st_dict['bikes'] = int(station['ba'])
+    if 'da' in station: st_dict['docks'] = int(station['da'])
     st_dict['poll_time'] = timestamp
     return st_dict
-
 
 def get_dock_qty(conn, station_id):
     select_stmt = """SELECT dock_qty FROM ref_stations WHERE id=?"""
@@ -119,45 +120,12 @@ def insert_count_history(conn, state_type, st_dict):
     VALUES (?, ?, ?, ?, ?, ?, ?)"""
     cursor = conn.cursor()
     cursor.execute(insert_stmt, values)
-    
-def update_count_history(conn, st_dict, db_dict):
+
+def deduce_current_state(st_dict, db_dict):
     # calculate the new value for inactives for st_dict
     total = st_dict['bikes'] + st_dict['docks']
     st_dict['inactives'] = db_dict['dock_qty'] - total
 
-    was_inserted = False
-    # insert into count_history if any change
-    if ((db_dict['bikes'] != st_dict['bikes']) or
-        (db_dict['docks'] != st_dict['docks'])):
-        insert_count_history(conn, 'available', st_dict)
-        was_inserted = True
-
-    if (db_dict['inactives'] != st_dict['inactives']):
-        insert_count_history(conn, 'defective', st_dict)
-        was_inserted = True
-
-    return was_inserted
-
-def create_state_params(state_type, st_dict, db_dict):
-    if state_type == 'available':
-        new_state = st_dict['a_state']
-        old_state = db_dict['a_state']
-    elif state_type == 'defective':
-        new_state = st_dict['d_state']
-        old_state = db_dict['d_state']
-    return (st_dict['id'], st_dict['poll_time'],
-            state_type, old_state, new_state)
-
-def insert_state_history(conn, state_type, st_dict, db_dict):
-    values = create_state_params(state_type, st_dict, db_dict)
-    insert_stmt = """INSERT INTO state_history
-    (station_id, change_time, state_type, old_state, new_state)
-    VALUES (?, ?, ?, ?, ?)"""
-    cursor = conn.cursor()
-    cursor.execute(insert_stmt, values)
-    
-
-def update_state_history(conn, st_dict, db_dict):
     # determine the current available_state
     if (st_dict['bikes'] != 0 and st_dict['docks'] != 0):
         st_dict['a_state'] = 'acceptable'
@@ -178,13 +146,47 @@ def update_state_history(conn, st_dict, db_dict):
         # negative means dock_qty could be wrong in ref_stations
         st_dict['d_state'] = 'unexpected'
 
+def create_state_params(state_type, st_dict, db_dict):
+    if state_type == 'available':
+        new_state = st_dict['a_state']
+        old_state = db_dict['a_state']
+    elif state_type == 'defective':
+        new_state = st_dict['d_state']
+        old_state = db_dict['d_state']
+    return (st_dict['id'], st_dict['poll_time'],
+            state_type, old_state, new_state)
+
+def insert_state_history(conn, state_type, st_dict, db_dict):
+    values = create_state_params(state_type, st_dict, db_dict)
+    insert_stmt = """INSERT INTO state_history
+    (station_id, change_time, state_type, old_state, new_state)
+    VALUES (?, ?, ?, ?, ?)"""
+    cursor = conn.cursor()
+    cursor.execute(insert_stmt, values)
+
+def update_history(conn, st_dict, db_dict):
     needs_update = False
+
+    # check for change in counts for available bikes or docks
+    if ((db_dict['bikes'] != st_dict['bikes']) or
+        (db_dict['docks'] != st_dict['docks'])):
+        insert_count_history(conn, 'available', st_dict)
+        needs_update = True
+
+    # check for change in counts for defective docks
+    if (db_dict['inactives'] != st_dict['inactives']):
+        insert_count_history(conn, 'defective', st_dict)
+        needs_update = True
+
+    # check for change in available state
     if (st_dict['a_state'] != db_dict['a_state']):
         insert_state_history(conn, 'available', st_dict, db_dict)
         needs_update = True
     if (st_dict['d_state'] != db_dict['d_state']):
         insert_state_history(conn, 'defective', st_dict, db_dict)
-        
+        needs_update = True
+
+    # for any insert to history, update curr_station 
     if needs_update:
         update_curr_station(conn, st_dict)
         return True
@@ -215,11 +217,11 @@ def process_stations(stations_ary, timestamp):
         # get the previous state
         db_dict = get_db_station(conn, st_dict)
 
-        # detect and save any change in counts 
-        update_count_history(conn, st_dict, db_dict)
+        # get the new current state 
+        deduce_current_state(st_dict, db_dict)
 
 	# detect and save any change in states
-        update_state_history(conn, st_dict, db_dict)		
+        update_history(conn, st_dict, db_dict)		
         
     conn.commit()
     conn.close()
