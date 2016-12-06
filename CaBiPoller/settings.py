@@ -55,7 +55,7 @@ ROOT_URLCONF = 'CaBiPoller.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['CaBiPoller/templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'CaBiPoller/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
