@@ -27,19 +27,35 @@ def get_stations():
     print(poll_time)
     return station_ary, timestamp
 
-def print_station(station):
-    print(station)
-
+def insert_ref_station(conn, st_dict):
+    cursor = conn.cursor()
+    insert_stmt = """INSERT into ref_stations (id, name, dock_qty, lat, lon, jurisdiction)
+                     VALUES (?, ?, ?, ?, ?, ?)"""
+    values = (st_dict['id'], st_dict['name'], 0,
+              st_dict['lat'], st_dict['lon'], st_dict['jurisdiction'])
+    cursor.execute(insert_stmt, values)
+    return st_dict['id']
+    
 def create_station_insert_params(st_dict):
     return (st_dict['id'], st_dict['bikes'], st_dict['docks'], st_dict['inactives'],
 			st_dict['poll_time'], st_dict['lu'], st_dict['lc'])
 
-def insert_curr_station(conn, station_id):
+def insert_curr_station(conn, st_dict):
     """Creates the row in the curr_stations table with all columns as
     NULL except for the primary id"""
-    insert_stmt = """INSERT INTO curr_stations (station_id) VALUES (?)"""
+    
     cursor = conn.cursor()
-    cursor.execute(insert_stmt, (station_id,))
+
+    # check if ref_station exists and if not, insert an instance with 0 dock_qty
+    select_stmt = """SELECT * FROM ref_stations WHERE id=?"""
+    cursor.execute(select_stmt, (st_dict['id'],))
+    row = cursor.fetchone()
+    if row == None:
+        # create ref_station
+        insert_ref_station(conn, st_dict)
+    
+    insert_stmt = """INSERT INTO curr_stations (station_id) VALUES (?)"""
+    cursor.execute(insert_stmt, (st_dict['id'],))
 
 def create_station_update_params(st_dict):
     return (st_dict['bikes'], st_dict['docks'], st_dict['inactives'],
@@ -69,6 +85,9 @@ def create_station_dict(station, timestamp):
     st_dict = {}
     if 'n' in station: st_dict['id'] = station['n']
     if 's' in station: st_dict['name'] = station['s']
+    if 'd' in station: st_dict['jurisdiction'] = station['d'][10:]
+    if 'la' in station: st_dict['lat'] = station['la']
+    if 'lo' in station: st_dict['lon'] = station['lo']
     if 'lc' in station: st_dict['lc'] = int(station['lc']/1000)
     else: st_dict['lc'] = 0
     if 'lu' in station: st_dict['lu'] = int(station['lu']/1000)
@@ -95,7 +114,7 @@ def get_db_station(conn, st_dict):
     # save db_station if not previously saved
     db_dict = select_curr_station(conn, st_dict['id'])
     if db_dict == None:
-        insert_curr_station(conn, st_dict['id'])
+        insert_curr_station(conn, st_dict)
         db_dict = select_curr_station(conn, st_dict['id'])
     if db_dict == None:
         raise AssertionError("db_station is missing")
