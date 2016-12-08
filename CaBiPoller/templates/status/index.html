@@ -8,6 +8,7 @@
 	<th>Name</th>
 	<th>Total Docks</th>
 	<th>Defective</th>
+    <th>Duration (hh:mm)</th>
 	{% for jurisdiction, stations in stations.broken %}
 	<tbody class="{{ jurisdiction }}">
 	<tr><td>{{ jurisdiction }}</td></tr>
@@ -18,31 +19,47 @@
 			</a></td>
 			<td>{{ station.ref_station.dock_qty }}</td>
 			<td>{{ station.inactives }}</td>
+            <td>{{ station.duration }}</td>
 		</tr>
 		{% endfor %}
 	</tbody>
 	{% endfor %}
 	</table>
 <h3>No Bike Available Stations</h3>
-	<ul>
+	<table class="table">
+	<th>Name</th>
+	<th>Docks</th>
+    <th>Duration (hh:mm)</th>
 	{% for station in stations.nobikes %}
-	<li>
+	<tr>
+		<td>
 		<a href="{% url 'station_detail' station.ref_station.id %}">
 			{{ station.ref_station.name|capfirst }}
 		</a>
-	</li>
+		</td>
+		<td>{{ station.docks }}</td>
+		<td>{{ station.duration }}</td>
+	</tr>
 	{% endfor %}
-	</ul>
+	</table>
+	
 <h3>No Dock Available Stations</h3>
-	<ul>
+	<table class="table">
+	<th>Name</th>
+	<th>Bikes</th>
+    <th>Duration (hh:mm)</th>
 	{% for station in stations.nodocks %}
-	<li>
+	<tr>
+		<td>
 		<a href="{% url 'station_detail' station.ref_station.id %}">
 			{{ station.ref_station.name|capfirst }}
 		</a>
-	</li>
+		</td>
+		<td>{{ station.bikes }}</td>
+		<td>{{ station.duration }}</td>
+	</tr>
 	{% endfor %}
-	</ul>
+	</table>
 <div>
 <form action={% url 'poll' %}" method="post">
 {% csrf_token %}

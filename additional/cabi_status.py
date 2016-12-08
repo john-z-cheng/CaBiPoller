@@ -60,14 +60,15 @@ def insert_curr_station(conn, st_dict):
 def create_station_update_params(st_dict):
     return (st_dict['bikes'], st_dict['docks'], st_dict['inactives'],
             st_dict['a_state'], st_dict['d_state'],
-            st_dict['poll_time'], st_dict['lc'], st_dict['lu'], 
+            st_dict['poll_time'], st_dict['lc'], st_dict['lu'],
+            st_dict['a_start'], st_dict['d_start'],
             st_dict['id'])
 
 def update_curr_station(conn, st_dict):
     values = create_station_update_params(st_dict)
     update_stmt = """UPDATE curr_stations
     SET bikes=?, docks=?, inactives=?, available_state=?, defective_state=?,
-	poll_time=?, lu=?, lc=?
+	poll_time=?, lu=?, lc=?, available_start=?, defective_start=?
     WHERE station_id=?"""
     cursor = conn.cursor()
     cursor.execute(update_stmt, values)
@@ -197,12 +198,26 @@ def update_history(conn, st_dict, db_dict):
         insert_count_history(conn, 'defective', st_dict)
         needs_update = True
 
+    # check for missing start timestamp for states
+    # which may have happened for a database schema change
+
+    st_dict['a_start'] = db_dict['available_start']
+    if ((st_dict['a_start'] == None) or (st_dict['a_start'] == 0)):
+        st_dict['a_start'] = st_dict['poll_time']
+        needs_update = True
+    st_dict['d_start'] = db_dict['defective_start']
+    if ((st_dict['d_start'] == None) or (st_dict['d_start'] == 0)):
+        st_dict['d_start'] = st_dict['poll_time']
+        needs_update = True
+
     # check for change in available state
     if (st_dict['a_state'] != db_dict['a_state']):
         insert_state_history(conn, 'available', st_dict, db_dict)
+        st_dict['a_start'] = st_dict['poll_time']
         needs_update = True
     if (st_dict['d_state'] != db_dict['d_state']):
         insert_state_history(conn, 'defective', st_dict, db_dict)
+        st_dict['d_start'] = st_dict['poll_time']
         needs_update = True
 
     # for any insert to history, update curr_station 
@@ -244,35 +259,7 @@ def process_stations(stations_ary, timestamp):
         
     conn.commit()
     conn.close()
-	
-def old_code():
-        (db_bikes, db_docks) = select_last_count(conn, st_dict['id'])
-        last_total = db_bikes + db_docks
-        diff = curr_total - last_total
-        
-        # save new count if different
-        if diff != 0:
-            value_params = create_count_params(st_dict)
-            insert_count(conn, value_params)
-        
-        # calculate delta for the total
-        delta = curr_total - last_total
-        max_diff = max_total - curr_total
-        station_id = st_dict['id']
-        station_name = st_dict['name']
-        if delta != 0:
-            print("Change of %d at %s %s" % (diff, station_id, station_name))
-            # save to events table
-        if st_dict['bikes'] == 0:
-            # save to status table
-            print("No bikes at %s %s" % (station_id, station_name))
-            pass
-        if st_dict['docks'] == 0:
-            # save to status table
-            print("No docks at %s %s" % (station_id, station_name))
-            pass
-        if max_diff > 0:
-            print("%d from max at %s %s" % (max_diff, station_id, station_name))
+
 			
 def run():
     station_ary, timestamp = get_stations()

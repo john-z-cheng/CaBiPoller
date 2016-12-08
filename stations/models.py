@@ -32,8 +32,11 @@ class Station(models.Model):
     available_state = models.TextField(blank=True, null=True)
     defective_state = models.TextField(blank=True, null=True)
     poll_time = models.IntegerField(blank=True, null=True)
+    available_start = models.IntegerField(blank=True, null=True)
+    defective_start = models.IntegerField(blank=True, null=True)
     lc = models.IntegerField(blank=True, null=True)
     lu = models.IntegerField(blank=True, null=True)
+    
 
     class Meta:
         managed = True
