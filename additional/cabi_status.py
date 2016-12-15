@@ -87,6 +87,7 @@ def create_station_dict(station, timestamp):
     if 'n' in station: st_dict['id'] = station['n']
     if 's' in station: st_dict['name'] = station['s']
     if 'd' in station: st_dict['jurisdiction'] = station['d'][10:]
+    else: st_dict['jurisdiction'] = 'Unknown'
     if 'la' in station: st_dict['lat'] = station['la']
     if 'lo' in station: st_dict['lon'] = station['lo']
     if 'lc' in station: st_dict['lc'] = int(station['lc']/1000)

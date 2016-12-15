@@ -51,7 +51,7 @@ def index(request):
 	stations = {}
 	nowtime = int(time.time())
 	stationToJurisdiction = create_jurisdiction_data()
-	brokenList = Station.objects.filter(defective_state='unacceptable')
+	brokenList = Station.objects.filter(defective_state__in=['unacceptable','unexpected'])
 	assign_duration(nowtime, 'defective', brokenList)
 	jurisList = get_list_per_jurisdiction(stationToJurisdiction, brokenList)
 
