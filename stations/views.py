@@ -70,10 +70,27 @@ def index(request):
 	est_dt = utc_tz.localize(poll_dt).astimezone(est_tz)
 	est_dt = est_tz.normalize(est_dt)
 	polltime = est_dt.strftime('%Y-%m-%d %H:%M:%S')
-	question = 'Answer the question'
 	return render(request, 'status/index.html', {
-		'stations':stations,'polltime':polltime,'question':question,
+		'stations':stations,'polltime':polltime
 	})
+	
+def nobikes(request):
+	stations = {}
+	nowtime = int(time.time())
+	stations['nobikes'] = Station.objects.filter(available_state='empty')
+	assign_duration(nowtime, 'available', stations['nobikes'])
+	return render(request, 'status/nobikes.html', {
+		'stations':stations
+	})
+	
+def nodocks(request):
+	stations = {}
+	nowtime = int(time.time())
+	stations['nodocks'] = Station.objects.filter(available_state='full')
+	assign_duration(nowtime, 'available', stations['nodocks'])
+	return render(request, 'status/nodocks.html', {
+		'stations':stations
+	})	
 	
 def station_detail(request, id):
 	try:

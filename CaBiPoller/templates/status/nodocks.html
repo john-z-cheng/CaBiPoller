@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<a href="{% url 'about' %}">About this site</a>
+<h3>No Dock Available Stations</h3>
+	<table class="table">
+	<th>Name</th>
+	<th>Bikes</th>
+    <th>Duration (hh:mm)</th>
+	{% for station in stations.nodocks %}
+	<tr>
+		<td>
+		<a href="{% url 'station_detail' station.ref_station.id %}">
+			{{ station.ref_station.name|capfirst }}
+		</a>
+		</td>
+		<td>{{ station.bikes }}</td>
+		<td>{{ station.duration }}</td>
+	</tr>
+	{% endfor %}
+	</table>
+{% endblock %} 

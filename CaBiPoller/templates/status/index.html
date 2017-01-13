@@ -3,6 +3,9 @@
 {% block content %}
 <h3>Detected change at: {{ polltime }} Eastern Time</h3>
 <a href="{% url 'about' %}">About this site</a>
+<a href="{% url 'nobikes' %}">Stations without bikes</a>
+<a href="{% url 'nodocks' %}">Stations without docks</a>
+
 <h3>Defective Stations</h3>
 	<table class="table">
 	<th>Name</th>
@@ -25,46 +28,4 @@
 	</tbody>
 	{% endfor %}
 	</table>
-<h3>No Bike Available Stations</h3>
-	<table class="table">
-	<th>Name</th>
-	<th>Docks</th>
-    <th>Duration (hh:mm)</th>
-	{% for station in stations.nobikes %}
-	<tr>
-		<td>
-		<a href="{% url 'station_detail' station.ref_station.id %}">
-			{{ station.ref_station.name|capfirst }}
-		</a>
-		</td>
-		<td>{{ station.docks }}</td>
-		<td>{{ station.duration }}</td>
-	</tr>
-	{% endfor %}
-	</table>
-	
-<h3>No Dock Available Stations</h3>
-	<table class="table">
-	<th>Name</th>
-	<th>Bikes</th>
-    <th>Duration (hh:mm)</th>
-	{% for station in stations.nodocks %}
-	<tr>
-		<td>
-		<a href="{% url 'station_detail' station.ref_station.id %}">
-			{{ station.ref_station.name|capfirst }}
-		</a>
-		</td>
-		<td>{{ station.bikes }}</td>
-		<td>{{ station.duration }}</td>
-	</tr>
-	{% endfor %}
-	</table>
-<div>
-<form action={% url 'poll' %}" method="post">
-{% csrf_token %}
-{{ question }}<br>
-<input type="text" name="word" />
-<input type="submit" value="poll" />
-</div>
 {% endblock %} 
